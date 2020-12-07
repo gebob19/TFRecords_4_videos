@@ -246,10 +246,18 @@ context_features = {
 }
 
 def parse_example(example_proto):
+    """Decodes a TFRecords example
+
+    Args:
+        example_proto (tf.train.Example): TFRecords Example
+
+    Returns:
+        tuple(tf.Tensor, int, str): tensor of the video, label and filename of 
+        the video 
+    """
     # Parse the input tf.train.Example using the dictionary above.
-    context, sequence = tf.parse_single_sequence_example(example_proto,
-                                                        context_features=context_features, 
-                                                        sequence_features=sequence_features)
+    context, sequence = tf.parse_single_sequence_example(example_proto,\
+        context_features=context_features, sequence_features=sequence_features)
     # extract the expected shape 
     shape = (context['temporal'], context['height'], context['width'], context['depth'])
 
@@ -287,14 +295,3 @@ def parse_example(example_proto):
 
     return video_data, label, filename
 
-if __name__ == '__main__':
-    # will save as -- tfrecords_save_path/(train/shard1.tfrecord)
-    tfrecords_save_path = pathlib.Path.home()/'Documents/gradschool/thesis/data/tfrecords'
-    # points to dir which includes train.txt, val.txt and test.txt
-    datafile_path = tfrecords_save_path 
-    # datafile_prefix/filepath for all 'filepath label' in train.txt
-    datafile_prefix = pathlib.Path.home()/'Documents/gradschool/thesis/data'\
-        '/something-something/20bn-something-something-v1'
-
-    tfrv = TFRecords4Video(tfrecords_save_path, datafile_path, datafile_prefix, 'images')
-    tfrv.create_tfrecords()
