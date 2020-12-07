@@ -3,6 +3,7 @@ import tensorflow.compat.v1 as tf
 import numpy as np
 import imageio 
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 import pathlib
 
 class TFRecords4Video():
@@ -157,7 +158,7 @@ class TFRecords4Video():
                 # split into 1GB (1e9 byte) shards 
                 while record_file.stat().st_size < max_bytes and i != n_examples: 
                     # write each example to tfrecord 
-                    example_i = tfrv.get_example(train_paths[i], train_labels[i])
+                    example_i = self.get_example(paths[i], labels[i])
                     writer.write(example_i.SerializeToString())
                     # process next example 
                     i += 1 
