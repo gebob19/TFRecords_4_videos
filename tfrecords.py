@@ -103,7 +103,7 @@ class TFRecords4Video():
         # read matrix data and save its shape 
         data = self.fn2video(filename)
         t, h, w, c = data.shape
-
+        
         # save video as list of encoded frames using tensorflow's operation 
         img_bytes = [tf.image.encode_jpeg(frame, format='rgb') for frame in data]
         with tf.Session() as sess: 
@@ -149,24 +149,38 @@ class TFRecords4Video():
         print('Splitting {} examples into {:.2f} GB shards'.format(\
             n_examples, max_bytes / 1e9))
 
-        n_processes = psutil.cpu_count()
+        # number of shutdowns + restarts to maintain ~1sec/iteration of encoding
+        # if factor = 1 it can go up to ~11sec/iteration (really slow)
+        # larger value = faster single processes but more shutdown/startup time
+        # smaller value = slower single process but less shutdown/startup time
+        factor = 90
+        n_processes = psutil.cpu_count() 
         print('Using {} processes...'.format(n_processes))
         
-        # split data into equal sized chunks 
-        paths_split = np.array_split(paths, n_processes)
-        labels_split = np.array_split(labels, n_processes)
+        paths_split = np.array_split(paths, factor)
+        labels_split = np.array_split(labels, factor)
 
-        # multiprocess the writing
-        pool = mp.Pool(n_processes)
-        returns = []
-        for i, (paths, labels) in enumerate(zip(paths_split, labels_split)):
-            r = pool.apply_async(process_write, args=(paths, labels, split, \
-                    max_bytes, i, self))
-            returns.append(r)
-        pool.close()
-        # use this to view errors in children (if any)
-        for r in returns: r.get()
-        pool.join()
+        process_id = 0 
+        pbar = tqdm(total=factor)
+        for (m_paths, m_labels) in zip(paths_split, labels_split):
+            # split data into equal sized chunks for each process
+            paths_further_split = np.array_split(m_paths, n_processes)
+            labels_further_split = np.array_split(m_labels, n_processes)
+
+            # multiprocess the writing 
+            pool = mp.Pool(n_processes)
+            returns = []
+            for paths, labels in zip(paths_further_split, labels_further_split):
+                r = pool.apply_async(process_write, args=(paths, labels, split, \
+                        max_bytes, process_id, self))
+                returns.append(r)
+                process_id += 1 
+            pool.close()
+            # use this to view errors in children (if any)
+            for r in returns: r.get()
+            pool.join()
+            pbar.update(1)
+        pbar.close()
 
     def split2records(self, split, max_bytes=1e9):
         """Creates TFRecords for a given data split
@@ -213,7 +227,6 @@ def process_write(paths, labels, split, max_bytes, process_id, tf4v):
     """
     shard_count, i = 0, 0
     n_examples = len(paths)
-    pbar = tqdm(total=n_examples)
     while i != n_examples:
         # tf record file to write to 
         tf_record_name = ('{}/{}-shard{}.tfrecord').format(split, \
@@ -228,11 +241,9 @@ def process_write(paths, labels, split, max_bytes, process_id, tf4v):
                 writer.write(example_i.SerializeToString())
                 # process next example 
                 i += 1 
-                pbar.update(1)
 
         # process a new shard 
         shard_count += 1
-    pbar.close()
     return 1 
 
 # TFRecords helpers 

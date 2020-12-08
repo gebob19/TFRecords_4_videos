@@ -9,7 +9,7 @@ from tfrecords import parse_example
 
 # turn of tensorflow logging  
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 
 # %%
 dataset = tf.data.TFRecordDataset(tfrecords)\
@@ -29,6 +29,7 @@ with tf.Session() as sess:
             pbar.update(1)
     except: 
         pass
+
 print(i)
 pbar.close()
 

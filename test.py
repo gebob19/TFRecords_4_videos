@@ -15,3 +15,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tfrv = TFRecords4Video(tfrecords_save_path, datafile_path, datafile_prefix, 'images') 
 tfrv.split2records('train', max_bytes=1e8)
 tfrv.split2records('val', max_bytes=1e8)
+
+# paths, labels = tfrv.extract_pathlabels('train')
+# paths, labels = paths[:100], labels[:100]
+# tfrv.pathlabels2records(paths, labels, 'train', 1e8)
