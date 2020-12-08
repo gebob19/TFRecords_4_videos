@@ -8,7 +8,7 @@ datafile_path = tfrecords_save_path
 # datafile_prefix/filepath for all 'filepath label' in train.txt
 datafile_prefix = pathlib.Path.home()/'data/something-something/20bn-something-something-v1'
 
-# turn of tensorflow logging
+# turn off tensorflow logging
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 
