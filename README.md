@@ -9,4 +9,4 @@
 | Multiprocess                | 11+ hours  |
 | Multiprocess + Split (Ours) | 1 hour     |
 
-Table1: Time taken to encode something-something-v1 into TFRecords
+Table1: Time to encode the training set of something-something-v1 into TFRecords
