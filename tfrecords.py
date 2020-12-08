@@ -1,37 +1,14 @@
 
-import tensorflow.compat.v1 as tf 
-import numpy as np
-import imageio 
-from tqdm import tqdm
-import matplotlib.pyplot as plt
 import pathlib
+import psutil
+import imageio 
 
-def process_write(paths, labels, split, max_bytes, process_id, tf4v):
-    shard_count, i = 0, 0
-    n_examples = len(paths)
-    pbar = tqdm(total=n_examples)
-    while i != n_examples:
-        # tf record file to write to 
-        tf_record_name = ('{}/{}-shard{}.tfrecord').format(split, \
-            process_id, shard_count)
-        print('\nProcessing: {}'.format(tf_record_name))
+import numpy as np
+import tensorflow.compat.v1 as tf 
+import matplotlib.pyplot as plt
+import multiprocessing as mp
 
-        record_file = tf4v.tfrecords_save_path/tf_record_name
-        with tf.python_io.TFRecordWriter(str(record_file)) as writer: 
-            # split into 1GB (1e9 byte) shards 
-            while record_file.stat().st_size < max_bytes and i != n_examples: 
-                # write each example to tfrecord 
-                example_i = tf4v.get_example(paths[i], labels[i])
-                writer.write(example_i.SerializeToString())
-                # process next example 
-                i += 1 
-                pbar.update(1)
-
-        # process a new shard 
-        shard_count += 1
-    pbar.close()
-    print('Total Number of Shards Created: ', shard_count)
-    return 1 
+from tqdm import tqdm
 
 class TFRecords4Video():
     def __init__(self, tfrecords_save_path, datafile_path, datafile_prefix,\
@@ -172,23 +149,24 @@ class TFRecords4Video():
         print('Splitting {} examples into {:.2f} GB shards'.format(\
             n_examples, max_bytes / 1e9))
 
-        import psutil
         n_processes = psutil.cpu_count()
-        print('Using {} processes'.format(n_processes))
+        print('Using {} processes...'.format(n_processes))
+        
+        # split data into equal sized chunks 
         paths_split = np.array_split(paths, n_processes)
         labels_split = np.array_split(labels, n_processes)
 
-        import multiprocessing as mp
-
+        # multiprocess the writing
         pool = mp.Pool(n_processes)
-        values = []
+        returns = []
         for i, (paths, labels) in enumerate(zip(paths_split, labels_split)):
-            v = pool.apply_async(process_write, args = (paths, labels, split, max_bytes, i, self))
-            values.append(v)
+            r = pool.apply_async(process_write, args=(paths, labels, split, \
+                    max_bytes, i, self))
+            returns.append(r)
         pool.close()
-        for v in values: v.get()
+        # use this to view errors in children (if any)
+        for r in returns: r.get()
         pool.join()
-
 
     def split2records(self, split, max_bytes=1e9):
         """Creates TFRecords for a given data split
@@ -217,6 +195,45 @@ class TFRecords4Video():
         """
         for split in ['train', 'test', 'val']:
             self.split2records(split, max_bytes)
+
+# multiprocessing function 
+def process_write(paths, labels, split, max_bytes, process_id, tf4v):
+    """Writes a list of video examples as a TFRecord. 
+
+    Args:
+        paths (list[pathlib.Path]): paths to videos
+        labels (list[int]): associative labels for the videos 
+        split (str): one of ['train', 'test', 'val']
+        max_bytes (int): Number of bytes per shard 
+        process_id (int): id of processes 
+        tf4v (TFRecords4Video): video processing class 
+
+    Returns:
+        int: 1 for success
+    """
+    shard_count, i = 0, 0
+    n_examples = len(paths)
+    pbar = tqdm(total=n_examples)
+    while i != n_examples:
+        # tf record file to write to 
+        tf_record_name = ('{}/{}-shard{}.tfrecord').format(split, \
+            process_id, shard_count)
+
+        record_file = tf4v.tfrecords_save_path/tf_record_name
+        with tf.python_io.TFRecordWriter(str(record_file)) as writer: 
+            # split into approx. equal sized shards 
+            while record_file.stat().st_size < max_bytes and i != n_examples: 
+                # write each example to tfrecord 
+                example_i = tf4v.get_example(paths[i], labels[i])
+                writer.write(example_i.SerializeToString())
+                # process next example 
+                i += 1 
+                pbar.update(1)
+
+        # process a new shard 
+        shard_count += 1
+    pbar.close()
+    return 1 
 
 # TFRecords helpers 
 def _int64_feature(value):
