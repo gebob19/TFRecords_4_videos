@@ -50,7 +50,7 @@ class TFRecords4Video():
             # allow custom parsing of video matrix 
             self.fn2video = fn2video
         
-    def format(self, split):
+    def extract_info(self, split):
         """Extracts absolute paths and labels from datafiles 
         ({train, val, test}.txt) using 
         self.datafile_path and self.datafile_prefix
@@ -179,7 +179,7 @@ class TFRecords4Video():
         print('Starting processing split {}.'.format(split))
 
         print('Extracting paths and labels...')
-        paths, labels = self.format(split)
+        paths, labels = self.extract_info(split)
         
         print('Writing to TFRecords...')
         self.write(paths, labels, split, max_bytes)
