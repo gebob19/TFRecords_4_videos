@@ -9,7 +9,7 @@
 | Multiprocess                | 11+ hours  |
 | Multiprocess + Split (Ours) | 1 hour     |
 
-Table1: Time to encode the training set of something-something-v1 into TFRecords
+Table1: Time to format the training set of something-something-v1
 
 | Method                                | Time |
 |---------------------------------------|------|
@@ -17,4 +17,4 @@ Table1: Time to encode the training set of something-something-v1 into TFRecords
 | TFRecord Encoding - 1MB shards (Ours) | 28GB |
 
 
-Table2: Total size of something-something-v1 training set
+Table2: Total size of something-something-v1 training set across formatting methods
