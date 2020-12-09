@@ -1,6 +1,8 @@
 # TFRecords_4_videos
 
-... coming soon ... 
+Note: Package is still under construction
+
+......... coming soon ...........
 
 
 | Method                      | Time       |
