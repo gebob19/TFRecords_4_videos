@@ -4,6 +4,7 @@ Note: Package is still under construction
 
 ......... coming soon ...........
 
+Associated blog post: [https://gebob19.github.io/tfrecords/](https://gebob19.github.io/tfrecords/)
 
 | Method                      | Time       |
 |-----------------------------|------------|
